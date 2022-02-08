@@ -1,0 +1,12 @@
+data/
+instance/
+.venv/
+venv/
+
+__pycache__/
+
+*.tmp
+tmp-*
+
+*.swp
+*.egg-info
