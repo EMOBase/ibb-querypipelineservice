@@ -2,6 +2,7 @@ import os
 import io
 import csv
 
+
 def step_tc_id__tc_name(list_tc_id):
     pass
 
@@ -15,6 +16,7 @@ dict_steps = {
     'tc_id': {
         'tc_symbol': {
             'name': 'TC -> TC symbol',
+            'description': 'Convert Tribolium gene in TCxxxxxx format to its corresponding gene symbol',
         },
         'tc_name': {
             'name': 'TC -> TC name',
@@ -93,7 +95,7 @@ dict_steps = {
 
 
 def get_convert_func(key_input, key_output):
-    return lambda x: x
+    return lambda list_: {k: [k] for k in list_}
     # return dict_steps[key_input][key_output].get('func', globals()[f'step_{key_input}__{key_output}'])
 
 
@@ -118,7 +120,6 @@ def get_steps():
 def execute(steps, initial_input):
     headers, mappings = [], []
     inputs = [set(initial_input)]
-    input_indexes = []
 
     for step in steps:
         try:
@@ -130,36 +131,63 @@ def execute(steps, initial_input):
         headers.append(key_input)
 
         try:
-            # Find last occurence of key_input
-            input_idx = len(headers) - 1 - headers[::-1].index(key_input)
-            input_indexes.append(input_idx)
-        except IndexError:
-            raise InvalidPipelineError(f'"{key_input}" must exist in previous steps' )
-
-        input_ = inputs[input_idx]
-
-        try:
             func = get_convert_func(key_input, key_output)
         except KeyError:
             raise InvalidPipelineError(f'No such step: {key_input} -> {key_output}')
 
+
+        try:
+            # Find last occurence of key_input
+            input_idx = len(headers) - 1 - headers[::-1].index(key_input)
+        except IndexError:
+            raise InvalidPipelineError(f'"{key_input}" must exist in previous steps' )
+
+
+        input_ = inputs[input_idx]
         output = func(input_)
 
         # input -> output = [i] -> { i: [o] }
-        # uniq_values = set(v for values in output.values() for v in values)
+        uniq_values = set(v for values in output.values() for v in values)
 
-        # inputs.append(uniq_values)
-        # mappings.append(output)
+        inputs.append(uniq_values)
+        mappings.append(output)
 
     headers.append(key_output)
 
+    # Convert to csv format
     result = io.StringIO()
     writer = csv.writer(result)
     writer.writerow(headers)
-    for item in initial_input:
-        writer.writerow([item for _ in headers])
+    writer.writerows(generate_row(initial_input, mappings))
 
     return result.getvalue()
+
+
+def generate_row(keys, mappings, i=0, current_row=[]):
+    """
+    Backtracking algorithm to generate rows from mappings a -> [b], b -> [c] ...
+    The value `None` should not be the key in any mapping
+
+    For example:
+        Input:  keys = [1, 2]
+                mappings = [ {1:[3,4,9]},    {3:[5,6], 4:[7,8]} ]
+
+        Output:
+                1 3 5
+                1 3 6
+                1 4 7
+                1 4 8
+                1 9 None
+                2 None None
+    """
+    for key in keys:
+        current_row.append(key)
+        if i == len(mappings):
+            yield current_row.copy()
+        else:
+            values = mappings[i].get(key, [None])
+            yield from generate_row(values, mappings, i+1, current_row)
+        current_row.pop()
 
 
 class InvalidPipelineError(Exception):
