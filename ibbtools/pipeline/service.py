@@ -1,3 +1,7 @@
+import os
+import io
+import csv
+
 def step_tc_id__tc_name(list_tc_id):
     pass
 
@@ -89,7 +93,8 @@ dict_steps = {
 
 
 def get_convert_func(key_input, key_output):
-    return dict_steps[key_input][key_output].get('func', globals()[f'step_{key_input}__{key_output}'])
+    return lambda x: x
+    # return dict_steps[key_input][key_output].get('func', globals()[f'step_{key_input}__{key_output}'])
 
 
 def get_steps():
@@ -97,10 +102,10 @@ def get_steps():
         for key_output in dict_steps[key_input]:
             step = dict_steps[key_input][key_output]
 
-            # try:
-            #     get_convert_func(key_input, key_output)
-            # except KeyError:
-            #     continue
+            try:
+                get_convert_func(key_input, key_output)
+            except KeyError:
+                continue
 
             yield {
                 'input': key_input,
@@ -116,8 +121,12 @@ def execute(steps, initial_input):
     input_indexes = []
 
     for step in steps:
-        key_input = step['input']
-        key_output = step['output']
+        try:
+            key_input = step['input']
+            key_output = step['output']
+        except KeyError:
+            raise InvalidPipelineError('Malformated json for steps')
+
         headers.append(key_input)
 
         try:
@@ -137,14 +146,20 @@ def execute(steps, initial_input):
         output = func(input_)
 
         # input -> output = [i] -> { i: [o] }
-        uniq_values = set(v for values in output.values() for v in values)
+        # uniq_values = set(v for values in output.values() for v in values)
 
-        inputs.append(uniq_values)
-        mappings.append(output)
+        # inputs.append(uniq_values)
+        # mappings.append(output)
 
     headers.append(key_output)
 
-    return initial_input
+    result = io.StringIO()
+    writer = csv.writer(result)
+    writer.writerow(headers)
+    for item in initial_input:
+        writer.writerow([item for _ in headers])
+
+    return result.getvalue()
 
 
 class InvalidPipelineError(Exception):
