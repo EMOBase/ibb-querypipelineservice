@@ -200,7 +200,6 @@ def execute(steps, initial_input):
     writer = csv.writer(result)
     writer.writerow(headers)
     writer.writerows(generate_row(initial_input, mappings))
-            'description': 'Convert Drosophila gene identifiers in FBgnxxxxxxx format to CGxxxx format',
 
     return result.getvalue()
 
