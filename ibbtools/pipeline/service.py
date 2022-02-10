@@ -155,6 +155,8 @@ def get_steps():
                 'output': key_output,
                 'name': step.get('name', f'{key_input} -> {key_output}'),
                 'options': step.get('options', []),
+                'description': step.get('description'),
+                'category': step.get('category'),
             }
 
 
