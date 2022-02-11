@@ -1,7 +1,16 @@
+import pytest
 import io
 import csv
 
 import ibbtools.pipeline.service as service
+
+
+@pytest.fixture(autouse=True)
+def mock_service_get_convert_func(monkeypatch):
+    def get_convert_func(key_input, key_output):
+        return lambda list_: {k: [k] for k in list_}
+
+    monkeypatch.setattr(service, 'get_convert_func', get_convert_func)
 
 
 def test_generate_row():

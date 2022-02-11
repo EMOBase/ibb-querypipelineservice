@@ -161,7 +161,7 @@ def get_steps():
 
 
 def execute(steps, initial_input):
-    headers, mappings = [], []
+    headers, mappings, input_labels = [], [], []
     inputs = [set(initial_input)]
 
     for step in steps:
@@ -171,6 +171,7 @@ def execute(steps, initial_input):
         except KeyError:
             raise InvalidPipelineError('Malformated json for steps')
 
+        input_labels.append(key_input)
         headers.append(key_input)
 
         try:
@@ -181,7 +182,7 @@ def execute(steps, initial_input):
 
         try:
             # Find last occurence of key_input
-            input_idx = len(headers) - 1 - headers[::-1].index(key_input)
+            input_idx = len(input_labels) - 1 - input_labels[::-1].index(key_input)
         except IndexError:
             raise InvalidPipelineError(f'"{key_input}" must exist in previous steps' )
 
