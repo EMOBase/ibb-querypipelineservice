@@ -1,5 +1,6 @@
 import json
 import os
+import io
 
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
@@ -9,7 +10,7 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
 
 import ibbtools.pipeline.service as service
-from ibbtools.pipeline.schema import PipelineSchema
+from ibbtools.pipeline.schema import PipelineSchema, StepSchema
 
 
 def create_app(test_config=None):
@@ -28,13 +29,17 @@ def create_app(test_config=None):
                 200:
                     description: Pipeline steps successfully returned
                     content:
-                        application/json: {}
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    schema: StepSchema
         """
         steps = list(service.get_steps())
         return jsonify(steps)
 
 
-    @app.route('/pipeline', methods=['POST'])
+    @app.route('/pipelines', methods=['POST'])
     def post_pipeline():
         """
         ---
@@ -62,7 +67,7 @@ def create_app(test_config=None):
         file_ = request.files.get('file')
 
         if file_ and file_.filename:
-            data = [d.strip() for d in file_]
+            data = [d.strip() for d in io.TextIOWrapper(file_, encoding='utf-8')]
         else:
             data = request.form.get('data')
             if data:
@@ -105,7 +110,7 @@ def config_app(app, test_config=None):
     app.config.from_mapping(
             SECRET_KEY=os.environ.get('SECRET_KEY', default='dev'),
             VERSION=os.environ.get('VERSION', default='latest'),
-            SERVER=os.environ.get('SERVER', default='0.0.0.0:8080'),
+            SERVER=os.environ.get('SERVER', default='0.0.0.0:5000'),
     )
 
     if test_config:
@@ -113,4 +118,4 @@ def config_app(app, test_config=None):
 
 
 if __name__ == '__main__':
-    create_app().run(host='0.0.0.0', port=8080, debug=True)
+    create_app().run(host='0.0.0.0', port=5000, debug=True)

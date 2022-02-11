@@ -1,3 +1,6 @@
+import io
+import csv
+
 import ibbtools.pipeline.service as service
 
 
@@ -30,5 +33,11 @@ def test_execute():
 
     data = [1, 2]
 
-    expected = 'a,b,c,d,e\r\n1,1,1,1,1\r\n2,2,2,2,2'
-    assert service.execute(steps, data) == expected
+    csv_string = io.StringIO(service.execute(steps, data))
+    reader = csv.reader(csv_string)
+
+    headers = next(reader)
+    assert headers == ['a', 'b', 'b', 'a', 'e']
+
+    rows = list(reader)
+    assert len(rows) == 2
