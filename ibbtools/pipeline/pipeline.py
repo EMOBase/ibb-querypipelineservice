@@ -58,6 +58,7 @@ class Pipeline:
             input_data.append(uniq_values)
 
 
+        print(mappings)
         header = [self.steps[0].input] + [s.name for s in self.steps]
         return PipelineResult(header, generate_row(initial_input, mappings))
 
