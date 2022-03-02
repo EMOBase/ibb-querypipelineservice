@@ -1,4 +1,5 @@
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, post_load
+from ibbtools.pipeline.repo import Step
 
 
 class OptionSchema(Schema):
@@ -13,6 +14,10 @@ class StepSchema(Schema):
     description = fields.Str()
     category = fields.Str()
     options = fields.List(fields.Nested(OptionSchema))
+
+    @post_load
+    def make_step(self, data, **kwargs):
+        return Step(**data)
 
 
 class PipelineSchema(Schema):

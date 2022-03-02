@@ -5,17 +5,27 @@ import io
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 
+from marshmallow import ValidationError
+
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
 
-import ibbtools.pipeline.service as service
 from ibbtools.pipeline.schema import PipelineSchema, StepSchema
+from ibbtools.pipeline.repo import Step, StepRepo, StepNotFoundError
+from ibbtools.pipeline.pipeline import Pipeline, InvalidPipelineError
+from ibbtools.pipeline.default_steps import get_default_steps
 
 
-def create_app(test_config=None):
+def create_app(test_config=None, available_steps=None):
     app = Flask(__name__)
     config_app(app, test_config)
+
+    repo = StepRepo()
+    if available_steps is None:
+        repo.add_all(get_default_steps())
+    else:
+        repo.add_all(available_steps)
 
 
     @app.route('/steps', methods=['GET'])
@@ -35,8 +45,9 @@ def create_app(test_config=None):
                                 items:
                                     schema: StepSchema
         """
-        steps = list(service.get_steps())
-        return jsonify(steps)
+        steps = repo.get_all()
+        schema = StepSchema(many=True)
+        return jsonify(schema.dump(steps))
 
 
     @app.route('/pipelines', methods=['POST'])
@@ -57,37 +68,35 @@ def create_app(test_config=None):
                 400:
                     description: Bad request
                     content:
-                        text/plain: {}
+                        application/json: {}
         """
 
-        steps = []
         try:
             steps = json.loads(request.form.get('steps'))
+            steps = StepSchema(many=True).load(steps)
+            steps = [repo.get(s.input, s.output) for s in steps]
         except json.decoder.JSONDecodeError:
-            pass
-
-        if not steps:
-            return 'Invalid steps', 400
+            return jsonify(error='Invalid json'), 400
+        except ValidationError as e:
+            return jsonify(error='Validation error'), 400
+        except StepNotFoundError as e:
+            return jsonify(error=str(e)), 400
 
         file_ = request.files.get('file')
-
         if file_ and file_.filename:
             data = io.TextIOWrapper(file_, encoding='utf-8').read()
         else:
             data = request.form.get('data', '')
-
         data = data.strip().splitlines()
         data = [d.strip() for d in data]
 
-        if not data:
-            return 'No data provided', 400
-
         try:
-            result = service.execute(steps, data)
-        except service.InvalidPipelineError as e:
-            return str(e), 400
+            pipeline = Pipeline(steps)
+            result = pipeline.execute(data)
+        except InvalidPipelineError as e:
+            return jsonify(error=str(e)), 400
 
-        return Response(result, mimetype='text/csv')
+        return Response(result.to_csv(), mimetype='text/csv')
 
 
     @app.route('/q/openapi', methods=['GET'])
