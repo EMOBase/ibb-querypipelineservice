@@ -1,19 +1,27 @@
 from ibbtools.pipeline.pipeline import generate_row
 
 def test_generate_row():
-    keys = [1, 2]
+    queries = ['a1', 'a2', 'a3']
+    input_indexes = [0, 0, 2]
     mappings = [
-        {1:[3,4,9]},
-        {3:[5,6], 4:[7,8]}
+        {'a1': ['b1', 'b2', 'b3']},
+        {'a1': ['c1', 'c2'], 'a2': ['c3', 'c4']},
+        {'c1': ['d1', 'd2']},
     ]
 
     expected = [
-        [1, 3, 5],
-        [1, 3, 6],
-        [1, 4, 7],
-        [1, 4, 8],
-        [1, 9, None],
-        [2, None, None],
+        ['a1', 'b1', 'c1', 'd1'],
+        ['a1', 'b1', 'c1', 'd2'],
+        ['a1', 'b1', 'c2', None],
+        ['a1', 'b2', 'c1', 'd1'],
+        ['a1', 'b2', 'c1', 'd2'],
+        ['a1', 'b2', 'c2', None],
+        ['a1', 'b3', 'c1', 'd1'],
+        ['a1', 'b3', 'c1', 'd2'],
+        ['a1', 'b3', 'c2', None],
+        ['a2', None, 'c3', None],
+        ['a2', None, 'c4', None],
+        ['a3', None, None, None],
     ]
 
-    assert list(generate_row(keys, mappings)) == expected
+    assert list(generate_row(queries, input_indexes, mappings)) == expected

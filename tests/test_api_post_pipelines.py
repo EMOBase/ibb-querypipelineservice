@@ -27,7 +27,9 @@ def client():
 @pytest.mark.parametrize('extra_newline', [True, False])
 def test_post_pipelines_success(client, mode, sep, extra_newline):
 
-    data = __make_data(['1', '2'], sep=sep, extra_newline=extra_newline)
+    data = __make_data(['1', '#ignore', '!ignore', '2', ''],
+            sep=sep, extra_newline=extra_newline)
+
     pipeline = __make_pipeline(json.dumps([
             {'input': 'a', 'output': 'b'},
             {'input': 'a', 'output': 'c'},
@@ -61,7 +63,7 @@ def test_post_pipelines_no_data(client, data, mode):
             data=pipeline,
             content_type='multipart/form-data')
 
-    assert rv.get_json()['error'] == 'No data'
+    assert rv.data.decode() == 'No data'
     assert rv.status_code == 400
 
 
@@ -81,7 +83,7 @@ def test_post_pipelines_invalid_steps(client, step_str, message):
             data=__make_pipeline(steps=step_str),
             content_type='multipart/form-data')
 
-    assert message in rv.get_json()['error']
+    assert message in rv.data.decode()
     assert rv.status_code == 400
 
 

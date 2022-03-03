@@ -4,6 +4,7 @@ import io
 
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
+from werkzeug.exceptions import BadRequest
 
 from marshmallow import ValidationError
 
@@ -26,6 +27,11 @@ def create_app(test_config=None, available_steps=None):
         repo.add_all(get_default_steps())
     else:
         repo.add_all(available_steps)
+
+
+    @app.errorhandler(BadRequest)
+    def handle_bad_request(e):
+        return e.description, 400
 
 
     @app.route('/steps', methods=['GET'])
@@ -68,33 +74,18 @@ def create_app(test_config=None, available_steps=None):
                 400:
                     description: Bad request
                     content:
-                        application/json: {}
+                        text/plain: {}
         """
 
-        try:
-            steps = json.loads(request.form.get('steps'))
-            steps = StepSchema(many=True).load(steps)
-            steps = [repo.get(s.input, s.output) for s in steps]
-        except json.decoder.JSONDecodeError:
-            return jsonify(error='Invalid json'), 400
-        except ValidationError as e:
-            return jsonify(error='Validation error'), 400
-        except StepNotFoundError as e:
-            return jsonify(error=str(e)), 400
 
-        file_ = request.files.get('file')
-        if file_ and file_.filename:
-            data = io.TextIOWrapper(file_, encoding='utf-8').read()
-        else:
-            data = request.form.get('data', '')
-        data = data.strip().splitlines()
-        data = [d.strip() for d in data]
+        steps = __preprocess_steps(request, repo)
+        data = __preprocess_data(request)
 
         try:
             pipeline = Pipeline(steps)
             result = pipeline.execute(data)
         except InvalidPipelineError as e:
-            return jsonify(error=str(e)), 400
+            raise BadRequest(str(e))
 
         return Response(result.to_csv(), mimetype='text/csv')
 
@@ -131,6 +122,40 @@ def config_app(app, test_config=None):
 
     if test_config:
         app.config.from_mapping(test_config)
+
+
+def __preprocess_steps(request, repo):
+    try:
+        steps = json.loads(request.form.get('steps'))
+        steps = StepSchema(many=True).load(steps)
+        steps = [repo.get(s.input, s.output) for s in steps]
+    except json.decoder.JSONDecodeError:
+        raise BadRequest('Invalid json')
+    except ValidationError as e:
+        raise BadRequest('Validation error')
+    except StepNotFoundError as e:
+        raise BadRequest(str(e))
+
+    if not steps:
+        raise BadRequest('No steps')
+    return steps
+
+
+def __preprocess_data(request):
+    comment_prefixes = set(['#', '!'])
+
+    file_ = request.files.get('file')
+    if file_ and file_.filename:
+        data = io.TextIOWrapper(file_, encoding='utf-8').read()
+    else:
+        data = request.form.get('data', '')
+    data = data.strip().splitlines()
+    data = [d.strip() for d in data]
+    data = [d for d in data if d and d[0] not in comment_prefixes]
+
+    if not data:
+        raise BadRequest('No data')
+    return data
 
 
 if __name__ == '__main__':

@@ -24,10 +24,6 @@ class PipelineResult:
 
 class Pipeline:
     def __init__(self, steps):
-
-        if not steps:
-            raise InvalidPipelineError('No steps')
-
         try:
             input_labels = [steps[0].input] + [s.output for s in steps]
             input_indexes = [find_last_index(input_labels[:i+1], s.input)
@@ -42,9 +38,6 @@ class Pipeline:
 
 
     def execute(self, initial_input):
-        if not initial_input:
-            raise InvalidPipelineError('No data')
-
         input_data = [set(initial_input)]
         mappings = []
 
@@ -53,14 +46,13 @@ class Pipeline:
             output = step.convert_func(input_)
             mappings.append(output)
 
-            # input -> output = [i] -> { i: [o] }
             uniq_values = set(v for values in output.values() for v in values)
             input_data.append(uniq_values)
 
 
-        print(mappings)
         header = [self.steps[0].input] + [s.name for s in self.steps]
-        return PipelineResult(header, generate_row(initial_input, mappings))
+        return PipelineResult(header,
+                generate_row(initial_input, self.__input_indexes, mappings))
 
 
 
@@ -72,28 +64,51 @@ def find_last_index(list_, item):
     return len(list_) - 1 - list_[::-1].index(item)
 
 
-def generate_row(keys, mappings, i=0, current_row=[]):
+def generate_row(queries, input_indexes, mappings, i=0, current_row=[]):
     """
-    Backtracking algorithm to generate rows from mappings a -> [b], b -> [c] ...
-    The value `None` should not be the key in any mapping
+    Backtracking algorithm to generate rows from mappings
+        A -> [B], A -> [C], C -> [D] ...
+
+    The number of columns equals the number of mappings plus 1
+
+    Params:
+        - queries: starting values
+        - input_indexes: index of the input for the current mapping
+        - mappings: list of mappings from string to list of strings.
+            The value `None` should not be the key in any mapping
 
     For example:
-        Input:  keys = [1, 2]
-                mappings = [ {1:[3,4,9]},    {3:[5,6], 4:[7,8]} ]
+        Input:  queries = [a1, a2, a3]
+                input_indexes = [0, 0, 2]
+                mappings = [
+                    {a1: [b1, b2, b3]},
+                    {a1: [c1, c2], a2: [c3, c4]},
+                    {c1: [d1, d2]},
+                ]
 
         Output:
-                1 3 5
-                1 3 6
-                1 4 7
-                1 4 8
-                1 9 None
-                2 None None
+                a1 b1 c1 d1
+                a1 b1 c1 d2
+                a1 b1 c2 None
+                a1 b2 c1 d1
+                a1 b2 c1 d2
+                a1 b2 c2 None
+                a1 b3 c1 d1
+                a1 b3 c1 d2
+                a1 b3 c2 None
+                a2 None c3 None
+                a2 None c4 None
+                a3 None None None
     """
-    for key in keys:
-        current_row.append(key)
+
+    for query in queries:
+        current_row.append(query)
         if i == len(mappings):
             yield current_row.copy()
         else:
+            key = current_row[input_indexes[i]]
             values = mappings[i].get(key, [None])
-            yield from generate_row(values, mappings, i+1, current_row)
+
+            yield from generate_row(values, input_indexes, mappings,
+                i+1, current_row)
         current_row.pop()
