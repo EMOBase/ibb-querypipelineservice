@@ -12,6 +12,8 @@ from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
 
+import ibbtools.pipeline.config
+
 from ibbtools.pipeline.schema import PipelineSchema, StepSchema
 from ibbtools.pipeline.repo import Step, StepRepo, StepNotFoundError
 from ibbtools.pipeline.pipeline import Pipeline, InvalidPipelineError
@@ -22,11 +24,12 @@ def create_app(test_config=None, available_steps=None):
     app = Flask(__name__)
     config_app(app, test_config)
 
-    repo = StepRepo()
-    if available_steps is None:
-        repo.add_all(get_default_steps())
-    else:
-        repo.add_all(available_steps)
+    with app.app_context():
+        repo = StepRepo()
+        if available_steps is None:
+            repo.add_all(get_default_steps())
+        else:
+            repo.add_all(available_steps)
 
 
     @app.errorhandler(BadRequest)
@@ -95,7 +98,7 @@ def create_app(test_config=None, available_steps=None):
         spec = APISpec(
                 title='iBB Pipeline API',
                 version=app.config['VERSION'],
-                servers=[{'url': app.config['SERVER']}],
+                servers=[{'url': app.config['PUBLIC_SERVER']}],
                 openapi_version='3.0.2',
                 plugins=[FlaskPlugin(), MarshmallowPlugin()],
         )
@@ -114,11 +117,7 @@ def create_app(test_config=None, available_steps=None):
 def config_app(app, test_config=None):
     CORS(app)
 
-    app.config.from_mapping(
-            SECRET_KEY=os.environ.get('SECRET_KEY', default='dev'),
-            VERSION=os.environ.get('VERSION', default='latest'),
-            SERVER=os.environ.get('SERVER', default='0.0.0.0:5000'),
-    )
+    app.config.from_object('ibbtools.pipeline.config')
 
     if test_config:
         app.config.from_mapping(test_config)

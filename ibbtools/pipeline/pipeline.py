@@ -107,7 +107,9 @@ def generate_row(queries, input_indexes, mappings, i=0, current_row=[]):
             yield current_row.copy()
         else:
             key = current_row[input_indexes[i]]
-            values = mappings[i].get(key, [None])
+            values = mappings[i].get(key)
+            if not values: #Also handle empty list
+                values = [None]
 
             yield from generate_row(values, input_indexes, mappings,
                 i+1, current_row)

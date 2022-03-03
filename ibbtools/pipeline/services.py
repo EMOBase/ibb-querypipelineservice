@@ -10,11 +10,31 @@ class GeneInfoService(HttpService):
         super().__init__(*args)
 
 
-    def get_drosophila_genes(self, id_list):
-        r = requests.get(self.base_url +
-            '/drosophila/genes?ids=' +
-            ','.join(id_list))
-        return r.json()
+    def get_drosophila_genes(self, id_list=None, symbol=None, cg=None):
+        url = self.base_url + '/drosophila/genes'
+
+        if id_list:
+            url += '?ids=' + ','.join(id_list)
+        elif symbol:
+            url += '?symbol=' + symbol
+        elif cg:
+            url += '?annotationId=' + cg
+
+        return requests.get(url).json()
 
 
-geneinfo_service = GeneInfoService('http://ibb-test.vm19002.virt.gwdg.de/ibb/api/geneinfo/v1')
+class OrthologyService(HttpService):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+
+    def get_drosophila_orthologs(self, id_list):
+        url = self.base_url + '/datasources/Legacy/drosophila/genes'
+        url += '?geneIds=' + ','.join(id_list)
+        return requests.get(url).json()
+
+
+    def get_tribolium_orthologs(self, id_list):
+        url = self.base_url + '/datasources/Legacy/tribolium/genes'
+        url += '?geneIds=' + ','.join(id_list)
+        return requests.get(url).json()

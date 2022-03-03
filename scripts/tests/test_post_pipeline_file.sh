@@ -9,4 +9,7 @@ curl -X 'POST' \
 },{
   "input": "FBgn",
   "output": "FB name"
+},{
+  "input": "FBgn",
+  "output": "CG"
 }]'
