@@ -1,4 +1,6 @@
+from collections import defaultdict
 from flask import current_app as app
+
 from ibbtools.pipeline.repo import Step
 import ibbtools.pipeline.services as services
 
@@ -9,11 +11,6 @@ dict_steps = {
             'name': 'TC -> GO ID',
             'category': 'Gene Ontology Annotation',
             'description': 'Get GO ID for Tribolium genes',
-        },
-        'ib_id': {
-            'name': 'TC -> iB',
-            'category': 'Gene Function Experiment',
-            'description': 'Get iB numbers for Tribolium genes'
         },
     },
     'dm_id': {
@@ -46,11 +43,6 @@ dict_steps = {
         },
     },
     'ib_id': {
-        'tc_id': {
-            'name': 'iB -> TC',
-            'category': 'Gene Function Experiment',
-            'description': 'Get Tribolium genes silenced by the iB fragments'
-        },
         'larval_lethality_11': {
             'name': 'iB -> larval lethality day 11',
             'category': 'Gene Function Experiment',
@@ -89,9 +81,8 @@ LETHALITY_PUPAL_11 = 'pupal lethality day 11'
 
 # Category
 CAT_GENE_ALIAS = 'Gene Alias'
+CAT_GENE_FUNCTION = 'Gene Function'
 CAT_ORTHOLOGY = 'Orthology'
-CAT_GO_ANNOTATION = 'Gene Ontology Annotation'
-CAT_EXPERIMENT = 'Gene Function Experiment'
 
 
 def get_default_steps():
@@ -100,6 +91,9 @@ def get_default_steps():
 
     orthology_service = services.OrthologyService(
             app.config['ORTHOLOGY_SERVICE_BASE_URL'])
+
+    genesilencing_service = services.GeneSilencingService(
+            app.config['GENESILENCING_SERVICE_BASE_URL'])
 
 
     def func__dm_id__dm_symbol(dm_id_list):
@@ -151,6 +145,7 @@ def get_default_steps():
             description='Convert Drosophila symbols to their gene identifiers'
             ' in FBgnxxxxxxx format')
 
+
     def func__dm_cg__dm_id(dm_cg_list):
         mapping = {}
         for cg in dm_cg_list:
@@ -192,6 +187,34 @@ def get_default_steps():
             convert_func=func__dm_id__tc_id,
             description='Get Tribolium orthologs for Drosophila genes')
 
+
+    def func__tc_id__ib_id(tc_id_list):
+        fragments = genesilencing_service.get_silencing_fragments(
+                tc_id_list=tc_id_list)
+
+        mapping = defaultdict(list)
+        for fragment in fragments:
+            ib_id = fragment['id']
+            for tc_id in fragment.get('geneIds', []):
+                mapping[tc_id].append(ib_id)
+        return mapping
+
+    step__tc_id__ib_id = Step(TC_ID, IB_ID,
+            category=CAT_GENE_FUNCTION,
+            convert_func=func__tc_id__ib_id,
+            description='Get iB numbers for Tribolium genes')
+
+
+    def func__ib_id__tc_id(ib_id_list):
+        fragments = genesilencing_service.get_silencing_fragments(
+                ib_id_list=ib_id_list)
+        return {f['id']: f.get('geneIds') for f in fragments}
+
+    step__ib_id__tc_id = Step(IB_ID, TC_ID,
+            category=CAT_GENE_FUNCTION,
+            convert_func=func__ib_id__tc_id,
+            description='Get Tribolium genes silenced by the iB fragments')
+
     return [
         step__dm_id__dm_symbol,
         step__dm_id__dm_name,
@@ -200,4 +223,6 @@ def get_default_steps():
         step__dm_cg__dm_id,
         step__dm_id__tc_id,
         step__tc_id__dm_id,
+        step__tc_id__ib_id,
+        step__ib_id__tc_id,
     ]

@@ -73,7 +73,7 @@ def generate_row(queries, input_indexes, mappings, i=0, current_row=[]):
 
     Params:
         - queries: starting values
-        - input_indexes: index of the input for the current mapping
+        - input_indexes: index of the input in the row for the current mapping
         - mappings: list of mappings from string to list of strings.
             The value `None` should not be the key in any mapping
 

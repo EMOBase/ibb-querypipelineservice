@@ -9,3 +9,6 @@ GENEINFO_SERVICE_BASE_URL = os.environ.get('GENEINFO_SERVICE_BASE_URL',
 
 ORTHOLOGY_SERVICE_BASE_URL = os.environ.get('ORTHOLOGY_SERVICE_BASE_URL',
         'http://ibb-test.vm19002.virt.gwdg.de/ibb/api/orthology/v1')
+
+GENESILENCING_SERVICE_BASE_URL = os.environ.get('GENESILENCING_SERVICE_BASE_URL',
+        'http://ibb-test.vm19002.virt.gwdg.de/ibb/api/genesilencing/v1')
