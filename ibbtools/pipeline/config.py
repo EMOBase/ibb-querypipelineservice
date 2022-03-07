@@ -12,3 +12,9 @@ ORTHOLOGY_SERVICE_BASE_URL = os.environ.get('ORTHOLOGY_SERVICE_BASE_URL',
 
 GENESILENCING_SERVICE_BASE_URL = os.environ.get('GENESILENCING_SERVICE_BASE_URL',
         'http://ibb-test.vm19002.virt.gwdg.de/ibb/api/genesilencing/v1')
+
+GENEONTOLOGY_SERVICE_BASE_URL = os.environ.get('GENEONTOLOGY_SERVICE_BASE_URL',
+        'http://ibb-test.vm19002.virt.gwdg.de/ibb/api/geneontology/v1')
+
+LETHALITY_SERVICE_BASE_URL = os.environ.get('LETHALITY_SERVICE_BASE_URL',
+        'http://ibb-test.vm19002.virt.gwdg.de/ibb/api/lethality/v1')

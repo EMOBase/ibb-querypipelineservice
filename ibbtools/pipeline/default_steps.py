@@ -1,65 +1,10 @@
+import re
 from collections import defaultdict
 from flask import current_app as app
 
 from ibbtools.pipeline.repo import Step
 import ibbtools.pipeline.services as services
 
-
-dict_steps = {
-    'tc_id': {
-        'go_id': {
-            'name': 'TC -> GO ID',
-            'category': 'Gene Ontology Annotation',
-            'description': 'Get GO ID for Tribolium genes',
-        },
-    },
-    'dm_id': {
-        'go_id': {
-            'name': 'FBgn -> GO',
-            'category': 'Gene Ontology Annotation',
-            'description': 'Get GO ID for Drosophila genes',
-        },
-    },
-    'go_id': {
-        'go_aspect': {
-            'name': 'GO ID -> GO aspect',
-            'category': 'Gene Ontology Annotation',
-            'description': 'Convert GO IDs to one of the three GO aspects',
-        },
-        'go_term': {
-            'name': 'GO ID -> GO term',
-            'category': 'Gene Ontology Annotation',
-            'description': 'Convert GO IDs to theirs corresponding name',
-        },
-        'tc_id': {
-            'name': 'GO ID -> TC',
-            'category': 'Gene Ontology Annotation',
-            'description': 'Get Tribolium genes for GO IDs',
-        },
-        'dm_id': {
-            'name': 'GO ID -> FBgn',
-            'category': 'Gene Ontology Annotation',
-            'description': 'Get Drosophila genes for GO IDs',
-        },
-    },
-    'ib_id': {
-        'larval_lethality_11': {
-            'name': 'iB -> larval lethality day 11',
-            'category': 'Gene Function Experiment',
-            'description': 'Get lethality on day 11 in iBeelte larval experiments',
-        },
-        'larval_lethality_22': {
-            'name': 'iB -> larval lethality day 22',
-            'category': 'Gene Function Experiment',
-            'description': 'Get lethality on day 22 in iBeelte larval experiments',
-        },
-        'pupal_lethality_11': {
-            'name': 'iB -> pupal lethality day 11',
-            'category': 'Gene Function Experiment',
-            'description': 'Get lethality on day 11 in iBeelte pupal experiments',
-        },
-    },
-}
 
 # Input Output
 TC_ID = 'TC'
@@ -94,6 +39,12 @@ def get_default_steps():
 
     genesilencing_service = services.GeneSilencingService(
             app.config['GENESILENCING_SERVICE_BASE_URL'])
+
+    geneontology_service = services.GeneOntologyService(
+            app.config['GENEONTOLOGY_SERVICE_BASE_URL'])
+
+    lethality_service = services.LethalityService(
+            app.config['LETHALITY_SERVICE_BASE_URL'])
 
 
     def func__dm_id__dm_symbol(dm_id_list):
@@ -172,7 +123,7 @@ def get_default_steps():
     step__tc_id__dm_id = Step(TC_ID, DM_ID,
             category=CAT_ORTHOLOGY,
             convert_func=func__tc_id__dm_id,
-            description='Get Drosophila orthologs for Tribolium genes')
+            description='Get Drosophila orthologs for Tribolium genes using OrthoDB9')
 
 
     def func__dm_id__tc_id(dm_id_list):
@@ -185,7 +136,7 @@ def get_default_steps():
     step__dm_id__tc_id = Step(DM_ID, TC_ID,
             category=CAT_ORTHOLOGY,
             convert_func=func__dm_id__tc_id,
-            description='Get Tribolium orthologs for Drosophila genes')
+            description='Get Tribolium orthologs for Drosophila genes using OrthoDB9')
 
 
     def func__tc_id__ib_id(tc_id_list):
@@ -215,6 +166,112 @@ def get_default_steps():
             convert_func=func__ib_id__tc_id,
             description='Get Tribolium genes silenced by the iB fragments')
 
+    def func__go_id__go_term(go_id_list):
+        terms = geneontology_service.get_go_terms(go_id_list)
+        return {t['id']: [t.get('name')] for t in terms}
+
+    step__go_id__go_term = Step(GO_ID, GO_TERM,
+            category=CAT_GENE_FUNCTION,
+            convert_func=func__go_id__go_term,
+            description='Convert GO IDs to theirs corresponding name')
+
+    def func__go_id__go_aspect(go_id_list):
+        terms = geneontology_service.get_go_terms(go_id_list)
+        return {t['id']: [t.get('aspect')] for t in terms}
+
+    step__go_id__go_aspect = Step(GO_ID, GO_ASPECT,
+            category=CAT_GENE_FUNCTION,
+            convert_func=func__go_id__go_aspect,
+            description='Convert GO IDs to one of the three GO aspects')
+
+    def func__gene_id__go_id(gene_id_list):
+        annotations = geneontology_service.get_annotations(gene_id_list=gene_id_list)
+        mapping = defaultdict(list)
+        for ann in annotations:
+            mapping[ann['geneId']].append(ann['term']['id'])
+        return mapping
+
+    step__tc_id__go_id = Step(TC_ID, GO_ID,
+            category=CAT_GENE_FUNCTION,
+            convert_func=func__gene_id__go_id,
+            description='Get GO ID for Tribolium genes')
+
+    step__dm_id__go_id = Step(DM_ID, GO_ID,
+            category=CAT_GENE_FUNCTION,
+            convert_func=func__gene_id__go_id,
+            description='Get GO ID for Drosophila genes')
+
+
+    def func__go_id__tc_id(go_id_list):
+        annotations = geneontology_service.get_annotations(go_id_list=go_id_list)
+        mapping = defaultdict(list)
+        tc_pat = re.compile('^TC[0-9]{6}$')
+        for ann in annotations:
+            gene_id = ann['geneId']
+            if tc_pat.match(gene_id):
+                mapping[ann['term']['id']].append(gene_id)
+        return mapping
+
+    step__go_id__tc_id = Step(GO_ID, TC_ID,
+            category=CAT_GENE_FUNCTION,
+            convert_func=func__go_id__tc_id,
+            description='Get Tribolium genes for GO IDs')
+
+
+    def func__go_id__dm_id(go_id_list):
+        annotations = geneontology_service.get_annotations(go_id_list=go_id_list)
+        mapping = defaultdict(list)
+        dm_pat = re.compile('^FBgn[0-9]{7}$')
+        for ann in annotations:
+            gene_id = ann['geneId']
+            if dm_pat.match(gene_id):
+                mapping[ann['term']['id']].append(gene_id)
+        return mapping
+
+    step__go_id__dm_id = Step(GO_ID, DM_ID,
+            category=CAT_GENE_FUNCTION,
+            convert_func=func__go_id__dm_id,
+            description='Get Drosophila genes for GO IDs')
+
+    def func__ib_id__dali11(ib_id_list):
+        mapping = {ib: lethality_service.get_lethality_values(ib).get('dali11')
+                for ib in ib_id_list}
+        mapping = {ib: [value] for ib, value in mapping.items()
+                if value != -1}
+        return mapping
+
+    step__ib_id__dali11 = Step(IB_ID, LETHALITY_LARVAL_11,
+            category=CAT_GENE_FUNCTION,
+            convert_func=func__ib_id__dali11,
+            description='Get lethality on day 11 in iBeetle larval screen')
+
+
+    def func__ib_id__dali22(ib_id_list):
+        mapping = {ib: lethality_service.get_lethality_values(ib).get('dali22')
+                for ib in ib_id_list}
+        mapping = {ib: [value] for ib, value in mapping.items()
+                if value != -1}
+        return mapping
+
+    step__ib_id__dali22 = Step(IB_ID, LETHALITY_LARVAL_22,
+            category=CAT_GENE_FUNCTION,
+            convert_func=func__ib_id__dali22,
+            description='Get lethality on day 22 in iBeetle larval screen')
+
+
+    def func__ib_id__dapi11(ib_id_list):
+        mapping = {ib: lethality_service.get_lethality_values(ib).get('dapi11')
+                for ib in ib_id_list}
+        mapping = {ib: [value] for ib, value in mapping.items()
+                if value != -1}
+        return mapping
+
+    step__ib_id__dapi11 = Step(IB_ID, LETHALITY_PUPAL_11,
+            category=CAT_GENE_FUNCTION,
+            convert_func=func__ib_id__dapi11,
+            description='Get lethality on day 11 in iBeetle pupal screen')
+
+
     return [
         step__dm_id__dm_symbol,
         step__dm_id__dm_name,
@@ -225,4 +282,13 @@ def get_default_steps():
         step__tc_id__dm_id,
         step__tc_id__ib_id,
         step__ib_id__tc_id,
+        step__go_id__go_term,
+        step__go_id__go_aspect,
+        step__tc_id__go_id,
+        step__dm_id__go_id,
+        step__go_id__tc_id,
+        step__go_id__dm_id,
+        step__ib_id__dali11,
+        step__ib_id__dali22,
+        step__ib_id__dapi11,
     ]
