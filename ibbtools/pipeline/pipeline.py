@@ -43,7 +43,7 @@ class Pipeline:
 
         for i, step in zip(self.__input_indexes, self.steps):
             input_ = input_data[i]
-            output = step.convert_func(input_)
+            output = step.convert_func(input_) if input_ else {}
             mappings.append(output)
 
             uniq_values = set(v for values in output.values() for v in values)
