@@ -14,9 +14,9 @@ DM_SYMBOL = 'FB symbol'
 DM_NAME = 'FB name'
 DM_CG = 'CG'
 
-GO_ID = 'GO ID'
-GO_ASPECT = 'GO aspect'
-GO_TERM = 'GO term'
+# GO_ID = 'GO ID'
+# GO_ASPECT = 'GO aspect'
+# GO_TERM = 'GO term'
 
 IB_ID = 'iB'
 
@@ -32,19 +32,19 @@ CAT_ORTHOLOGY = 'Orthology'
 
 def get_default_steps():
     geneinfo_service = services.GeneInfoService(
-            app.config['GENEINFO_SERVICE_BASE_URL'])
+            app.config['GENESERVICE_BASE_URL'])
 
     orthology_service = services.OrthologyService(
-            app.config['ORTHOLOGY_SERVICE_BASE_URL'])
+            app.config['GENESERVICE_BASE_URL'])
 
     genesilencing_service = services.GeneSilencingService(
-            app.config['GENESILENCING_SERVICE_BASE_URL'])
+            app.config['GENESERVICE_BASE_URL'])
 
-    geneontology_service = services.GeneOntologyService(
-            app.config['GENEONTOLOGY_SERVICE_BASE_URL'])
+#     geneontology_service = services.GeneOntologyService(
+#             app.config['GENEONTOLOGY_SERVICE_BASE_URL'])
 
     lethality_service = services.LethalityService(
-            app.config['LETHALITY_SERVICE_BASE_URL'])
+            app.config['IBLETHALITYSERVICE_BASE_URL'])
 
 
     def func__dm_id__dm_symbol(dm_id_list):
@@ -166,72 +166,72 @@ def get_default_steps():
             convert_func=func__ib_id__tc_id,
             description='Get Tribolium genes silenced by the iB fragments')
 
-    def func__go_id__go_term(go_id_list):
-        terms = geneontology_service.get_go_terms(go_id_list)
-        return {t['id']: [t.get('name')] for t in terms}
+#     def func__go_id__go_term(go_id_list):
+#         terms = geneontology_service.get_go_terms(go_id_list)
+#         return {t['id']: [t.get('name')] for t in terms}
 
-    step__go_id__go_term = Step(GO_ID, GO_TERM,
-            category=CAT_GENE_FUNCTION,
-            convert_func=func__go_id__go_term,
-            description='Convert GO IDs to theirs corresponding name')
+#     step__go_id__go_term = Step(GO_ID, GO_TERM,
+#             category=CAT_GENE_FUNCTION,
+#             convert_func=func__go_id__go_term,
+#             description='Convert GO IDs to theirs corresponding name')
 
-    def func__go_id__go_aspect(go_id_list):
-        terms = geneontology_service.get_go_terms(go_id_list)
-        return {t['id']: [t.get('aspect')] for t in terms}
+#     def func__go_id__go_aspect(go_id_list):
+#         terms = geneontology_service.get_go_terms(go_id_list)
+#         return {t['id']: [t.get('aspect')] for t in terms}
 
-    step__go_id__go_aspect = Step(GO_ID, GO_ASPECT,
-            category=CAT_GENE_FUNCTION,
-            convert_func=func__go_id__go_aspect,
-            description='Convert GO IDs to one of the three GO aspects')
+#     step__go_id__go_aspect = Step(GO_ID, GO_ASPECT,
+#             category=CAT_GENE_FUNCTION,
+#             convert_func=func__go_id__go_aspect,
+#             description='Convert GO IDs to one of the three GO aspects')
 
-    def func__gene_id__go_id(gene_id_list):
-        annotations = geneontology_service.get_annotations(gene_id_list=gene_id_list)
-        mapping = defaultdict(list)
-        for ann in annotations:
-            mapping[ann['geneId']].append(ann['term']['id'])
-        return mapping
+#     def func__gene_id__go_id(gene_id_list):
+#         annotations = geneontology_service.get_annotations(gene_id_list=gene_id_list)
+#         mapping = defaultdict(list)
+#         for ann in annotations:
+#             mapping[ann['geneId']].append(ann['term']['id'])
+#         return mapping
 
-    step__tc_id__go_id = Step(TC_ID, GO_ID,
-            category=CAT_GENE_FUNCTION,
-            convert_func=func__gene_id__go_id,
-            description='Get GO ID for Tribolium genes')
+#     step__tc_id__go_id = Step(TC_ID, GO_ID,
+#             category=CAT_GENE_FUNCTION,
+#             convert_func=func__gene_id__go_id,
+#             description='Get GO ID for Tribolium genes')
 
-    step__dm_id__go_id = Step(DM_ID, GO_ID,
-            category=CAT_GENE_FUNCTION,
-            convert_func=func__gene_id__go_id,
-            description='Get GO ID for Drosophila genes')
-
-
-    def func__go_id__tc_id(go_id_list):
-        annotations = geneontology_service.get_annotations(go_id_list=go_id_list)
-        mapping = defaultdict(list)
-        tc_pat = re.compile('^TC[0-9]{6}$')
-        for ann in annotations:
-            gene_id = ann['geneId']
-            if tc_pat.match(gene_id):
-                mapping[ann['term']['id']].append(gene_id)
-        return mapping
-
-    step__go_id__tc_id = Step(GO_ID, TC_ID,
-            category=CAT_GENE_FUNCTION,
-            convert_func=func__go_id__tc_id,
-            description='Get Tribolium genes for GO IDs')
+#     step__dm_id__go_id = Step(DM_ID, GO_ID,
+#             category=CAT_GENE_FUNCTION,
+#             convert_func=func__gene_id__go_id,
+#             description='Get GO ID for Drosophila genes')
 
 
-    def func__go_id__dm_id(go_id_list):
-        annotations = geneontology_service.get_annotations(go_id_list=go_id_list)
-        mapping = defaultdict(list)
-        dm_pat = re.compile('^FBgn[0-9]{7}$')
-        for ann in annotations:
-            gene_id = ann['geneId']
-            if dm_pat.match(gene_id):
-                mapping[ann['term']['id']].append(gene_id)
-        return mapping
+#     def func__go_id__tc_id(go_id_list):
+#         annotations = geneontology_service.get_annotations(go_id_list=go_id_list)
+#         mapping = defaultdict(list)
+#         tc_pat = re.compile('^TC[0-9]{6}$')
+#         for ann in annotations:
+#             gene_id = ann['geneId']
+#             if tc_pat.match(gene_id):
+#                 mapping[ann['term']['id']].append(gene_id)
+#         return mapping
 
-    step__go_id__dm_id = Step(GO_ID, DM_ID,
-            category=CAT_GENE_FUNCTION,
-            convert_func=func__go_id__dm_id,
-            description='Get Drosophila genes for GO IDs')
+#     step__go_id__tc_id = Step(GO_ID, TC_ID,
+#             category=CAT_GENE_FUNCTION,
+#             convert_func=func__go_id__tc_id,
+#             description='Get Tribolium genes for GO IDs')
+
+
+#     def func__go_id__dm_id(go_id_list):
+#         annotations = geneontology_service.get_annotations(go_id_list=go_id_list)
+#         mapping = defaultdict(list)
+#         dm_pat = re.compile('^FBgn[0-9]{7}$')
+#         for ann in annotations:
+#             gene_id = ann['geneId']
+#             if dm_pat.match(gene_id):
+#                 mapping[ann['term']['id']].append(gene_id)
+#         return mapping
+
+#     step__go_id__dm_id = Step(GO_ID, DM_ID,
+#             category=CAT_GENE_FUNCTION,
+#             convert_func=func__go_id__dm_id,
+#             description='Get Drosophila genes for GO IDs')
 
     def func__ib_id__dali11(ib_id_list):
         mapping = {ib: lethality_service.get_lethality_values(ib).get('dali11')
@@ -282,12 +282,12 @@ def get_default_steps():
         step__tc_id__dm_id,
         step__tc_id__ib_id,
         step__ib_id__tc_id,
-        step__go_id__go_term,
-        step__go_id__go_aspect,
-        step__tc_id__go_id,
-        step__dm_id__go_id,
-        step__go_id__tc_id,
-        step__go_id__dm_id,
+        # step__go_id__go_term,
+        # step__go_id__go_aspect,
+        # step__tc_id__go_id,
+        # step__dm_id__go_id,
+        # step__go_id__tc_id,
+        # step__go_id__dm_id,
         step__ib_id__dali11,
         step__ib_id__dali22,
         step__ib_id__dapi11,

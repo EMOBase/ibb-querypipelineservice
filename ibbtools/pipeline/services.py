@@ -55,12 +55,12 @@ class GeneInfoService(HttpService):
 
 class OrthologyService(HttpService):
     def get_drosophila_orthologs(self, id_list):
-        path = '/datasources/Legacy/drosophila/genes'
+        path = '/datasources/orthofinder/drosophila/genes'
         return self.get_list(path, geneIds=','.join(id_list))
 
 
     def get_tribolium_orthologs(self, id_list):
-        path = '/datasources/Legacy/tribolium/genes'
+        path = '/datasources/orthofinder/tribolium/genes'
         return self.get_list(path, geneIds=','.join(id_list))
 
 
@@ -75,19 +75,19 @@ class GeneSilencingService(HttpService):
             return []
 
 
-class GeneOntologyService(HttpService):
-    def get_go_terms(self, go_id_list):
-        path = '/GO'
-        return self.get_list(path, ids=','.join(go_id_list))
+# class GeneOntologyService(HttpService):
+#     def get_go_terms(self, go_id_list):
+#         path = '/GO'
+#         return self.get_list(path, ids=','.join(go_id_list))
 
-    def get_annotations(self, gene_id_list=None, go_id_list=None):
-        path = '/annotation'
-        if gene_id_list:
-            return self.get_list(path, geneId=','.join(gene_id_list))
-        elif go_id_list:
-            return self.get_list(path, termId=','.join(go_id_list))
-        else:
-            return []
+#     def get_annotations(self, gene_id_list=None, go_id_list=None):
+#         path = '/annotation'
+#         if gene_id_list:
+#             return self.get_list(path, geneId=','.join(gene_id_list))
+#         elif go_id_list:
+#             return self.get_list(path, termId=','.join(go_id_list))
+#         else:
+#             return []
 
 
 class LethalityService(HttpService):
