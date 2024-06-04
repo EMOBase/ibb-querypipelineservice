@@ -90,7 +90,7 @@ class GeneSilencingService(HttpService):
 #             return []
 
 
-class LethalityService(HttpService):
+class PhenotypeService(HttpService):
     def get_lethality_values(self, ib_id):
         path = '/lethality/' + ib_id
         return self.get_object(path)

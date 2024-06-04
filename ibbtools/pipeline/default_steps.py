@@ -43,8 +43,8 @@ def get_default_steps():
 #     geneontology_service = services.GeneOntologyService(
 #             app.config['GENEONTOLOGY_SERVICE_BASE_URL'])
 
-    lethality_service = services.LethalityService(
-            app.config['IBLETHALITYSERVICE_BASE_URL'])
+    phenotypeservice = services.PhenotypeService(
+            app.config['PHENOTYPESERVICE_BASE_URL'])
 
 
     def func__dm_id__dm_symbol(dm_id_list):
@@ -123,7 +123,7 @@ def get_default_steps():
     step__tc_id__dm_id = Step(TC_ID, DM_ID,
             category=CAT_ORTHOLOGY,
             convert_func=func__tc_id__dm_id,
-            description='Get Drosophila orthologs for Tribolium genes using OrthoDB9')
+            description='Get Drosophila orthologs for Tribolium genes using OrthoFinder')
 
 
     def func__dm_id__tc_id(dm_id_list):
@@ -136,7 +136,7 @@ def get_default_steps():
     step__dm_id__tc_id = Step(DM_ID, TC_ID,
             category=CAT_ORTHOLOGY,
             convert_func=func__dm_id__tc_id,
-            description='Get Tribolium orthologs for Drosophila genes using OrthoDB9')
+            description='Get Tribolium orthologs for Drosophila genes using OrthoFinder')
 
 
     def func__tc_id__ib_id(tc_id_list):
@@ -234,7 +234,7 @@ def get_default_steps():
 #             description='Get Drosophila genes for GO IDs')
 
     def func__ib_id__dali11(ib_id_list):
-        mapping = {ib: lethality_service.get_lethality_values(ib).get('dali11')
+        mapping = {ib: phenotypeservice.get_lethality_values(ib).get('dali11')
                 for ib in ib_id_list}
         mapping = {ib: [value] for ib, value in mapping.items()
                 if value != -1}
@@ -247,7 +247,7 @@ def get_default_steps():
 
 
     def func__ib_id__dali22(ib_id_list):
-        mapping = {ib: lethality_service.get_lethality_values(ib).get('dali22')
+        mapping = {ib: phenotypeservice.get_lethality_values(ib).get('dali22')
                 for ib in ib_id_list}
         mapping = {ib: [value] for ib, value in mapping.items()
                 if value != -1}
@@ -260,7 +260,7 @@ def get_default_steps():
 
 
     def func__ib_id__dapi11(ib_id_list):
-        mapping = {ib: lethality_service.get_lethality_values(ib).get('dapi11')
+        mapping = {ib: phenotypeservice.get_lethality_values(ib).get('dapi11')
                 for ib in ib_id_list}
         mapping = {ib: [value] for ib, value in mapping.items()
                 if value != -1}
