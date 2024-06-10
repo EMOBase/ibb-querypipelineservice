@@ -26,12 +26,3 @@ and proper attributes (input, output, description, category)
 
 3. Add the step to the returned list of the `get_default_steps` function
 
-## Environment variables
-
-These variables must be set especially in production
-
-- `GENEINFO_SERVICE_BASE_URL`
-- `ORTHOLOGY_SERVICE_BASE_URL`
-- `GENESILENCING_SERVICE_BASE_URL`
-- `PUBLIC_SERVER`: the base url of this service which is accessible from
-outside of proxy (if any) to be included in OpenAPI document
