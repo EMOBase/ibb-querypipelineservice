@@ -41,11 +41,10 @@ The service reads these environment variables:
 | `MAIN_SPECIES_GENE_PATTERN` | `^TC\d+$` | Regex used to keep only main-species orthologs |
 | `ORTHOLOG_SPECIES_GENE_PATTERN` | `^FBgn\d+$` | Regex used to keep only reference-species orthologs |
 
-`POST /pipelines` accepts an optional `version` form field or query parameter
-with the genomics Database Version to query. This is the value selected in the
-frontend's version dropdown; it takes precedence over `GENOMICS_VERSION`.
-Requests that omit it fall back to `GENOMICS_VERSION`, then to the genomics
-default version.
+`POST /pipelines` accepts an optional `version` form field with the genomics
+Database Version to query. This is the value selected in the frontend's version
+dropdown; it takes precedence over `GENOMICS_VERSION`. Requests that omit it
+fall back to `GENOMICS_VERSION`, then to the genomics default version.
 
 The gene-ID patterns matter because `GET /orthology/{species}` returns genes
 from every other species in a group, while the pipeline steps only promise

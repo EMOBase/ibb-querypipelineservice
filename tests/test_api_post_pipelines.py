@@ -110,6 +110,29 @@ def test_post_pipeline_passes_version(monkeypatch):
     assert seen_versions[-1] == 'v9'
 
 
+def test_post_pipeline_ignores_version_query_param(monkeypatch):
+    seen_versions = []
+
+    def fake_get_default_steps(version=None):
+        seen_versions.append(version)
+        return [Step('a', 'b',
+            convert_func=lambda values: {v: [v] for v in values})]
+
+    monkeypatch.setattr(
+        'ibbtools.pipeline.api.get_default_steps', fake_get_default_steps)
+
+    app = create_app({'TESTING': True})
+    with app.test_client() as client:
+        rv = client.post('/pipelines?version=from-query',
+            data=__make_pipeline(
+                steps=json.dumps([{'input': 'a', 'output': 'b'}]),
+                data='1'),
+            content_type='multipart/form-data')
+
+    assert rv.status_code == 200
+    assert seen_versions[-1] is None
+
+
 def __make_pipeline(steps='_default', data='_default', mode='inline',
         version=None):
     """ Utility to make pipeline for POST /pipelines request.

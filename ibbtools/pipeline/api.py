@@ -85,7 +85,7 @@ def create_app(test_config=None, available_steps=None):
         """
 
 
-        version = request.form.get('version') or request.args.get('version')
+        version = (request.form.get('version') or '').strip() or None
         request_repo = make_repo(version)
 
         steps = __preprocess_steps(request, request_repo)
