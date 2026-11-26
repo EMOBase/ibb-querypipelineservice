@@ -26,3 +26,22 @@ and proper attributes (input, output, description, category)
 
 3. Add the step to the returned list of the `get_default_steps` function
 
+## Configuration
+
+The service reads these environment variables:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `GENOMICSSERVICE_BASE_URL` | `http://genomicsservice:8080` | Base URL on which `/genes/...`, `/orthology/...` and `/silencingseqs/...` are served. Include the portal prefix when calling through the portal, e.g. `https://portal.example.com/api/genomicsservice/v1` |
+| `PHENOTYPESERVICE_BASE_URL` | `http://phenotypeservice:8080` | Base URL of the iBeetle phenotype service |
+| `MAIN_SPECIES` | `Tcas` | Species used by the `TC` and `iB` steps |
+| `ORTHOLOG_SPECIES` | `Dmel` | Reference species used by the `FBgn` steps |
+| `ORTHOLOGY_SOURCE` | `all` | Orthology source filter, e.g. `OrthoFinder` or `all` |
+| `GENOMICS_VERSION` | empty | Optional genomics Database Version; empty uses the configured default |
+| `MAIN_SPECIES_GENE_PATTERN` | `^TC\d+$` | Regex used to keep only main-species orthologs |
+| `ORTHOLOG_SPECIES_GENE_PATTERN` | `^FBgn\d+$` | Regex used to keep only reference-species orthologs |
+
+The gene-ID patterns matter because `GET /orthology/{species}` returns genes
+from every other species in a group, while the pipeline steps only promise
+Tcas/Dmel conversions.
+

@@ -31,20 +31,39 @@ CAT_ORTHOLOGY = 'Orthology'
 
 
 def get_default_steps():
+    genomics_base_url = app.config['GENOMICSSERVICE_BASE_URL']
+    main_species = app.config['MAIN_SPECIES']
+    ortholog_species = app.config['ORTHOLOG_SPECIES']
+    orthology_source = app.config['ORTHOLOGY_SOURCE']
+    genomics_version = app.config['GENOMICS_VERSION']
+
     geneinfo_service = services.GeneInfoService(
-            app.config['GENESERVICE_BASE_URL'])
+            genomics_base_url,
+            species=ortholog_species,
+            version=genomics_version)
 
     orthology_service = services.OrthologyService(
-            app.config['GENESERVICE_BASE_URL'])
+            genomics_base_url,
+            main_species=main_species,
+            reference_species=ortholog_species,
+            source=orthology_source,
+            version=genomics_version)
 
     genesilencing_service = services.GeneSilencingService(
-            app.config['GENESERVICE_BASE_URL'])
+            genomics_base_url,
+            species=main_species,
+            version=genomics_version)
 
 #     geneontology_service = services.GeneOntologyService(
 #             app.config['GENEONTOLOGY_SERVICE_BASE_URL'])
 
     phenotypeservice = services.PhenotypeService(
             app.config['PHENOTYPESERVICE_BASE_URL'])
+
+    main_gene_pattern = re.compile(
+            app.config['MAIN_SPECIES_GENE_PATTERN'])
+    ortholog_gene_pattern = re.compile(
+            app.config['ORTHOLOG_SPECIES_GENE_PATTERN'])
 
 
     def func__dm_id__dm_symbol(dm_id_list):
@@ -115,9 +134,12 @@ def get_default_steps():
 
     def func__tc_id__dm_id(tc_id_list):
         orthologs = orthology_service.get_tribolium_orthologs(tc_id_list)
-        mapping = {o['gene']: o.get('orthologs', []) for o in orthologs}
-        for k in mapping:
-            mapping[k] = [o['gene'] for o in mapping[k]]
+        mapping = {}
+        for ortholog in orthologs:
+            mapping[ortholog['gene']] = [
+                o['gene'] for o in ortholog.get('orthologs', [])
+                if ortholog_gene_pattern.match(o['gene'])
+            ]
         return mapping
 
     step__tc_id__dm_id = Step(TC_ID, DM_ID,
@@ -128,9 +150,12 @@ def get_default_steps():
 
     def func__dm_id__tc_id(dm_id_list):
         orthologs = orthology_service.get_drosophila_orthologs(dm_id_list)
-        mapping = {o['gene']: o.get('orthologs', []) for o in orthologs}
-        for k in mapping:
-            mapping[k] = [o['gene'] for o in mapping[k]]
+        mapping = {}
+        for ortholog in orthologs:
+            mapping[ortholog['gene']] = [
+                o['gene'] for o in ortholog.get('orthologs', [])
+                if main_gene_pattern.match(o['gene'])
+            ]
         return mapping
 
     step__dm_id__tc_id = Step(DM_ID, TC_ID,
