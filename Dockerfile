@@ -9,7 +9,12 @@ ENV PATH="/app/venv/bin:$PATH"
 COPY requirements.txt .
 
 RUN python -m pip install --upgrade pip
-RUN pip install -r requirements.txt
+
+# Build C extensions where no musllinux/arm wheel exists (notably PyYAML on
+# Alpine arm64), then remove the compiler from the final image.
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev \
+    && pip install -r requirements.txt \
+    && apk del .build-deps
 
 COPY . .
 RUN chown -R ibbtools:ibbtools ./
