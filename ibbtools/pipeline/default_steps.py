@@ -7,8 +7,6 @@ import ibbtools.pipeline.services as services
 
 
 # Input Output
-TC_ID = 'TC'
-
 DM_ID = 'FBgn'
 DM_SYMBOL = 'FB symbol'
 DM_NAME = 'FB name'
@@ -17,8 +15,6 @@ DM_CG = 'CG'
 # GO_ID = 'GO ID'
 # GO_ASPECT = 'GO aspect'
 # GO_TERM = 'GO term'
-
-IB_ID = 'iB'
 
 LETHALITY_LARVAL_11 = 'larval lethality day 11'
 LETHALITY_LARVAL_22 = 'larval lethality day 22'
@@ -30,23 +26,41 @@ CAT_GENE_FUNCTION = 'Gene Function'
 CAT_ORTHOLOGY = 'Orthology'
 
 
+def _parse_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    value = str(value).strip().lower()
+    if value == '':
+        return default
+    return value not in ('0', 'false', 'no', 'off')
+
+
 def get_default_steps(version=None):
     genomics_base_url = app.config['GENOMICSSERVICE_BASE_URL']
     main_species = app.config['MAIN_SPECIES']
-    ortholog_species = app.config['ORTHOLOG_SPECIES']
+    main_gene_label = app.config['MAIN_GENE_LABEL']
+    dsrna_label = app.config['DSRNA_LABEL']
+    reference_species = app.config['REFERENCE_SPECIES']
     orthology_source = app.config['ORTHOLOGY_SOURCE']
     genomics_version = (
             app.config['GENOMICS_VERSION'] if version is None else version)
+    include_lethality = _parse_bool(
+            app.config['LETHALITY_STEPS_ENABLED'], default=True)
+
+    TC_ID = main_gene_label
+    IB_ID = dsrna_label
 
     geneinfo_service = services.GeneInfoService(
             genomics_base_url,
-            species=ortholog_species,
+            species=reference_species,
             version=genomics_version)
 
     orthology_service = services.OrthologyService(
             genomics_base_url,
             main_species=main_species,
-            reference_species=ortholog_species,
+            reference_species=reference_species,
             source=orthology_source,
             version=genomics_version)
 
@@ -63,8 +77,8 @@ def get_default_steps(version=None):
 
     main_gene_pattern = re.compile(
             app.config['MAIN_SPECIES_GENE_PATTERN'])
-    ortholog_gene_pattern = re.compile(
-            app.config['ORTHOLOG_SPECIES_GENE_PATTERN'])
+    reference_gene_pattern = re.compile(
+            app.config['REFERENCE_SPECIES_GENE_PATTERN'])
 
 
     def func__dm_id__dm_symbol(dm_id_list):
@@ -139,14 +153,15 @@ def get_default_steps(version=None):
         for ortholog in orthologs:
             mapping[ortholog['gene']] = [
                 o['gene'] for o in ortholog.get('orthologs', [])
-                if ortholog_gene_pattern.match(o['gene'])
+                if reference_gene_pattern.match(o['gene'])
             ]
         return mapping
 
     step__tc_id__dm_id = Step(TC_ID, DM_ID,
             category=CAT_ORTHOLOGY,
             convert_func=func__tc_id__dm_id,
-            description='Get Drosophila orthologs for Tribolium genes using OrthoFinder')
+            description=f'Get {reference_species} orthologs for'
+            f' {main_gene_label} genes')
 
 
     def func__dm_id__tc_id(dm_id_list):
@@ -162,7 +177,8 @@ def get_default_steps(version=None):
     step__dm_id__tc_id = Step(DM_ID, TC_ID,
             category=CAT_ORTHOLOGY,
             convert_func=func__dm_id__tc_id,
-            description='Get Tribolium orthologs for Drosophila genes using OrthoFinder')
+            description=f'Get {main_gene_label} orthologs for'
+            f' {reference_species} genes')
 
 
     def func__tc_id__ib_id(tc_id_list):
@@ -178,8 +194,9 @@ def get_default_steps(version=None):
 
     step__tc_id__ib_id = Step(TC_ID, IB_ID,
             category=CAT_GENE_FUNCTION,
+            requires='dsrna',
             convert_func=func__tc_id__ib_id,
-            description='Get iB numbers for Tribolium genes')
+            description=f'Get {dsrna_label} IDs for {main_gene_label} genes')
 
 
     def func__ib_id__tc_id(ib_id_list):
@@ -189,8 +206,10 @@ def get_default_steps(version=None):
 
     step__ib_id__tc_id = Step(IB_ID, TC_ID,
             category=CAT_GENE_FUNCTION,
+            requires='dsrna',
             convert_func=func__ib_id__tc_id,
-            description='Get Tribolium genes silenced by the iB fragments')
+            description=f'Get {main_gene_label} genes silenced by the'
+            f' {dsrna_label} fragments')
 
 #     def func__go_id__go_term(go_id_list):
 #         terms = geneontology_service.get_go_terms(go_id_list)
@@ -268,6 +287,7 @@ def get_default_steps(version=None):
 
     step__ib_id__dali11 = Step(IB_ID, LETHALITY_LARVAL_11,
             category=CAT_GENE_FUNCTION,
+            requires='dsrna',
             convert_func=func__ib_id__dali11,
             description='Get lethality on day 11 in iBeetle larval screen')
 
@@ -281,6 +301,7 @@ def get_default_steps(version=None):
 
     step__ib_id__dali22 = Step(IB_ID, LETHALITY_LARVAL_22,
             category=CAT_GENE_FUNCTION,
+            requires='dsrna',
             convert_func=func__ib_id__dali22,
             description='Get lethality on day 22 in iBeetle larval screen')
 
@@ -294,11 +315,12 @@ def get_default_steps(version=None):
 
     step__ib_id__dapi11 = Step(IB_ID, LETHALITY_PUPAL_11,
             category=CAT_GENE_FUNCTION,
+            requires='dsrna',
             convert_func=func__ib_id__dapi11,
             description='Get lethality on day 11 in iBeetle pupal screen')
 
 
-    return [
+    steps = [
         step__dm_id__dm_symbol,
         step__dm_id__dm_name,
         step__dm_id__dm_cg,
@@ -308,13 +330,13 @@ def get_default_steps(version=None):
         step__tc_id__dm_id,
         step__tc_id__ib_id,
         step__ib_id__tc_id,
-        # step__go_id__go_term,
-        # step__go_id__go_aspect,
-        # step__tc_id__go_id,
-        # step__dm_id__go_id,
-        # step__go_id__tc_id,
-        # step__go_id__dm_id,
-        step__ib_id__dali11,
-        step__ib_id__dali22,
-        step__ib_id__dapi11,
     ]
+
+    if include_lethality:
+        steps.extend([
+            step__ib_id__dali11,
+            step__ib_id__dali22,
+            step__ib_id__dapi11,
+        ])
+
+    return steps

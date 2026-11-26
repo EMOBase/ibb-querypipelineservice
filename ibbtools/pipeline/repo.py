@@ -9,6 +9,7 @@ class Step:
             description=None,
             category=None,
             options=[],
+            requires=None,
             convert_func=None):
 
         self.input = input
@@ -16,6 +17,7 @@ class Step:
         self.description = description
         self.options = options
         self.category = category
+        self.requires = requires
         self.name = name if name else f'{self.input} -> {self.output}'
         self.convert_func = convert_func
 

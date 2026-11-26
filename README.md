@@ -34,12 +34,21 @@ The service reads these environment variables:
 | --- | --- | --- |
 | `GENOMICSSERVICE_BASE_URL` | `http://genomicsservice:8080` | Base URL on which `/genes/...`, `/orthology/...` and `/silencingseqs/...` are served. Include the portal prefix when calling through the portal, e.g. `https://portal.example.com/api/genomicsservice/v1` |
 | `PHENOTYPESERVICE_BASE_URL` | `http://phenotypeservice:8080` | Base URL of the iBeetle phenotype service |
-| `MAIN_SPECIES` | `Tcas` | Species used by the `TC` and `iB` steps |
-| `ORTHOLOG_SPECIES` | `Dmel` | Reference species used by the `FBgn` steps |
-| `ORTHOLOGY_SOURCE` | `all` | Orthology source filter, e.g. `OrthoFinder` or `all` |
-| `GENOMICS_VERSION` | empty | Fallback genomics Database Version when a request does not send one; empty uses the genomics default |
+| `MAIN_SPECIES` | `Tcas` | Main species used by the orthology and dsRNA steps |
+| `MAIN_GENE_LABEL` | `TC` | Label for the main-species gene ID in step names and CSV headers |
 | `MAIN_SPECIES_GENE_PATTERN` | `^TC\d+$` | Regex used to keep only main-species orthologs |
-| `ORTHOLOG_SPECIES_GENE_PATTERN` | `^FBgn\d+$` | Regex used to keep only reference-species orthologs |
+| `DSRNA_LABEL` | `iB` | Label for dsRNA fragment IDs in step names and CSV headers |
+| `LETHALITY_STEPS_ENABLED` | `true` | Include the iBeetle phenotype/lethality steps |
+| `ORTHOLOGY_SOURCE` | `OrthoFinder` | Orthology source filter. The legacy pipeline used OrthoFinder; the portal also holds Eggnog6, which groups genes differently |
+| `GENOMICS_VERSION` | empty | Fallback genomics Database Version when a request does not send one; empty uses the genomics default |
+
+The reference side is fixed to Dmel for now, so `FBgn`, `FB symbol`, `FB name`
+and `CG` are not configurable. `MAIN_GENE_LABEL` and `DSRNA_LABEL` are used in
+the step names and CSV headers, e.g. `FBgn -> TC` and `TC -> iB` for the iBeetle
+defaults.
+
+Steps that need dsRNA data carry `requires: "dsrna"` in the `/steps` response so
+the frontend can hide them when the selected version has no `dsrna.csv`.
 
 `POST /pipelines` accepts an optional `version` form field with the genomics
 Database Version to query. This is the value selected in the frontend's version
@@ -48,5 +57,5 @@ fall back to `GENOMICS_VERSION`, then to the genomics default version.
 
 The gene-ID patterns matter because `GET /orthology/{species}` returns genes
 from every other species in a group, while the pipeline steps only promise
-Tcas/Dmel conversions.
+main-species/Dmel conversions.
 

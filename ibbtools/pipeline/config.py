@@ -10,19 +10,22 @@ GENOMICSSERVICE_BASE_URL = os.environ.get('GENOMICSSERVICE_BASE_URL',
 PHENOTYPESERVICE_BASE_URL = os.environ.get('PHENOTYPESERVICE_BASE_URL',
         'http://phenotypeservice:8080')
 
-# Species used by the iBeetle conversion steps. MAIN_SPECIES is the species the
-# iB/TC steps refer to; ORTHOLOG_SPECIES is the reference species for FBgn.
+# Species used by the iBeetle conversion steps. The reference side is fixed to
+# Dmel for now; MAIN_SPECIES is the species the iB/TC steps refer to.
+REFERENCE_SPECIES = 'Dmel'
+REFERENCE_SPECIES_GENE_PATTERN = r'^FBgn\d+$'
+
 MAIN_SPECIES = os.environ.get('MAIN_SPECIES', default='Tcas')
-ORTHOLOG_SPECIES = os.environ.get('ORTHOLOG_SPECIES', default='Dmel')
-ORTHOLOGY_SOURCE = os.environ.get('ORTHOLOGY_SOURCE', default='all')
+MAIN_GENE_LABEL = os.environ.get('MAIN_GENE_LABEL', default='TC')
+MAIN_SPECIES_GENE_PATTERN = os.environ.get('MAIN_SPECIES_GENE_PATTERN',
+        default=r'^TC\d+$')
+DSRNA_LABEL = os.environ.get('DSRNA_LABEL', default='iB')
+LETHALITY_STEPS_ENABLED = os.environ.get('LETHALITY_STEPS_ENABLED',
+        default='true')
+
+# The legacy pipeline used the OrthoFinder source; the portal can also hold
+# Eggnog6 orthology, which groups genes differently and changes the output.
+ORTHOLOGY_SOURCE = os.environ.get('ORTHOLOGY_SOURCE', default='OrthoFinder')
 
 # Optional genomics Database Version. Empty means the configured default.
 GENOMICS_VERSION = os.environ.get('GENOMICS_VERSION', default='')
-
-# Gene-ID patterns used to keep only the orthologs from the expected species.
-# The genomics /orthology response contains genes from every other species in
-# a group, but the pipeline step names only promise Tcas/Dmel conversions.
-MAIN_SPECIES_GENE_PATTERN = os.environ.get('MAIN_SPECIES_GENE_PATTERN',
-        default=r'^TC\d+$')
-ORTHOLOG_SPECIES_GENE_PATTERN = os.environ.get('ORTHOLOG_SPECIES_GENE_PATTERN',
-        default=r'^FBgn\d+$')
