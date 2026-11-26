@@ -1,6 +1,8 @@
 import pytest
 
 from ibbtools.pipeline import create_app
+from ibbtools.pipeline.schema import StepSchema
+
 
 @pytest.fixture
 def client():
@@ -40,6 +42,12 @@ def test_default_steps_keep_tcas_labels(client):
     assert by_name['iB -> TC']['requires'] == 'dsrna'
     assert by_name['iB -> larval lethality day 11']['requires'] == 'dsrna'
     assert by_name['FBgn -> TC'].get('requires') is None
+
+
+def test_get_steps_response_can_be_submitted(client):
+    steps = client.get('/steps').get_json()
+    loaded = StepSchema(many=True).load(steps)
+    assert len(loaded) == len(steps)
 
 
 def test_steps_use_configured_main_species_labels():

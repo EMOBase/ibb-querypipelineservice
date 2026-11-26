@@ -13,7 +13,7 @@ class StepSchema(Schema):
     name = fields.Str()
     description = fields.Str()
     category = fields.Str()
-    requires = fields.Str()
+    requires = fields.Str(allow_none=True)
     options = fields.List(fields.Nested(OptionSchema))
 
     @post_load
