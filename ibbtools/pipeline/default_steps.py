@@ -30,12 +30,13 @@ CAT_GENE_FUNCTION = 'Gene Function'
 CAT_ORTHOLOGY = 'Orthology'
 
 
-def get_default_steps():
+def get_default_steps(version=None):
     genomics_base_url = app.config['GENOMICSSERVICE_BASE_URL']
     main_species = app.config['MAIN_SPECIES']
     ortholog_species = app.config['ORTHOLOG_SPECIES']
     orthology_source = app.config['ORTHOLOGY_SOURCE']
-    genomics_version = app.config['GENOMICS_VERSION']
+    genomics_version = (
+            app.config['GENOMICS_VERSION'] if version is None else version)
 
     geneinfo_service = services.GeneInfoService(
             genomics_base_url,

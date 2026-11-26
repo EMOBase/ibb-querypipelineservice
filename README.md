@@ -37,9 +37,15 @@ The service reads these environment variables:
 | `MAIN_SPECIES` | `Tcas` | Species used by the `TC` and `iB` steps |
 | `ORTHOLOG_SPECIES` | `Dmel` | Reference species used by the `FBgn` steps |
 | `ORTHOLOGY_SOURCE` | `all` | Orthology source filter, e.g. `OrthoFinder` or `all` |
-| `GENOMICS_VERSION` | empty | Optional genomics Database Version; empty uses the configured default |
+| `GENOMICS_VERSION` | empty | Fallback genomics Database Version when a request does not send one; empty uses the genomics default |
 | `MAIN_SPECIES_GENE_PATTERN` | `^TC\d+$` | Regex used to keep only main-species orthologs |
 | `ORTHOLOG_SPECIES_GENE_PATTERN` | `^FBgn\d+$` | Regex used to keep only reference-species orthologs |
+
+`POST /pipelines` accepts an optional `version` form field or query parameter
+with the genomics Database Version to query. This is the value selected in the
+frontend's version dropdown; it takes precedence over `GENOMICS_VERSION`.
+Requests that omit it fall back to `GENOMICS_VERSION`, then to the genomics
+default version.
 
 The gene-ID patterns matter because `GET /orthology/{species}` returns genes
 from every other species in a group, while the pipeline steps only promise

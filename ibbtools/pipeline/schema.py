@@ -23,4 +23,5 @@ class StepSchema(Schema):
 class PipelineSchema(Schema):
     steps = fields.List(fields.Nested(StepSchema), required=True)
     data = fields.List(fields.Str())
+    version = fields.Str()
     file = fields.Str(metadata={'format': 'binary'})

@@ -24,12 +24,16 @@ def create_app(test_config=None, available_steps=None):
     app = Flask(__name__)
     config_app(app, test_config)
 
-    with app.app_context():
+    def make_repo(version=None):
         repo = StepRepo()
         if available_steps is None:
-            repo.add_all(get_default_steps())
+            repo.add_all(get_default_steps(version=version))
         else:
             repo.add_all(available_steps)
+        return repo
+
+    with app.app_context():
+        repo = make_repo()
 
 
     @app.errorhandler(BadRequest)
@@ -81,7 +85,10 @@ def create_app(test_config=None, available_steps=None):
         """
 
 
-        steps = __preprocess_steps(request, repo)
+        version = request.form.get('version') or request.args.get('version')
+        request_repo = make_repo(version)
+
+        steps = __preprocess_steps(request, request_repo)
         data = __preprocess_data(request)
 
         try:

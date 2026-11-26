@@ -87,7 +87,31 @@ def test_post_pipelines_invalid_steps(client, step_str, message):
     assert rv.status_code == 400
 
 
-def __make_pipeline(steps='_default', data='_default', mode='inline'):
+def test_post_pipeline_passes_version(monkeypatch):
+    seen_versions = []
+
+    def fake_get_default_steps(version=None):
+        seen_versions.append(version)
+        return [Step('a', 'b',
+            convert_func=lambda values: {v: [v] for v in values})]
+
+    monkeypatch.setattr(
+        'ibbtools.pipeline.api.get_default_steps', fake_get_default_steps)
+
+    app = create_app({'TESTING': True})
+    with app.test_client() as client:
+        rv = client.post('/pipelines',
+            data=__make_pipeline(
+                steps=json.dumps([{'input': 'a', 'output': 'b'}]),
+                data='1', version='v9'),
+            content_type='multipart/form-data')
+
+    assert rv.status_code == 200
+    assert seen_versions[-1] == 'v9'
+
+
+def __make_pipeline(steps='_default', data='_default', mode='inline',
+        version=None):
     """ Utility to make pipeline for POST /pipelines request.
 
     Should create a valid pipeline if no argument is provided
@@ -107,6 +131,9 @@ def __make_pipeline(steps='_default', data='_default', mode='inline'):
 
     if steps is not None:
         pipeline['steps'] = steps
+
+    if version is not None:
+        pipeline['version'] = version
 
 
     if data is not None:
