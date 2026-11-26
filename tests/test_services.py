@@ -48,6 +48,19 @@ def test_gene_info_service_uses_species_and_version():
             timeout=30)
 
 
+def test_gene_info_service_omits_empty_version():
+    response = FakeResponse({'data': [{'id': 'FBgn0000001'}]})
+    with patch('ibbtools.pipeline.services.requests.get',
+            return_value=response) as get:
+        service = services.GeneInfoService(
+            'http://genomics:8080', species='Dmel')
+        service.get_drosophila_genes(['FBgn0000001'])
+        get.assert_called_once_with(
+            'http://genomics:8080/genes/Dmel',
+            params={'ids': 'FBgn0000001'},
+            timeout=30)
+
+
 def test_gene_info_service_dedupes_by_id():
     response = FakeResponse({'data': [
         {'id': 'FBgn0000001', 'assemblyKey': 'a'},

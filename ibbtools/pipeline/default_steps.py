@@ -44,8 +44,7 @@ def get_default_steps(version=None):
     dsrna_label = app.config['DSRNA_LABEL']
     reference_species = app.config['REFERENCE_SPECIES']
     orthology_source = app.config['ORTHOLOGY_SOURCE']
-    genomics_version = (
-            app.config['GENOMICS_VERSION'] if version is None else version)
+    genomics_version = version or ''
     include_lethality = _parse_bool(
             app.config['LETHALITY_STEPS_ENABLED'], default=True)
 

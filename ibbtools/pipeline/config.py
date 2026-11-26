@@ -26,6 +26,3 @@ LETHALITY_STEPS_ENABLED = os.environ.get('LETHALITY_STEPS_ENABLED',
 # The legacy pipeline used the OrthoFinder source; the portal can also hold
 # Eggnog6 orthology, which groups genes differently and changes the output.
 ORTHOLOGY_SOURCE = os.environ.get('ORTHOLOGY_SOURCE', default='OrthoFinder')
-
-# Optional genomics Database Version. Empty means the configured default.
-GENOMICS_VERSION = os.environ.get('GENOMICS_VERSION', default='')

@@ -40,7 +40,6 @@ The service reads these environment variables:
 | `DSRNA_LABEL` | `iB` | Label for dsRNA fragment IDs in step names and CSV headers |
 | `LETHALITY_STEPS_ENABLED` | `true` | Include the iBeetle phenotype/lethality steps |
 | `ORTHOLOGY_SOURCE` | `OrthoFinder` | Orthology source filter. The legacy pipeline used OrthoFinder; the portal also holds Eggnog6, which groups genes differently |
-| `GENOMICS_VERSION` | empty | Fallback genomics Database Version when a request does not send one; empty uses the genomics default |
 
 The reference side is fixed to Dmel for now, so `FBgn`, `FB symbol`, `FB name`
 and `CG` are not configurable. `MAIN_GENE_LABEL` and `DSRNA_LABEL` are used in
@@ -52,8 +51,8 @@ the frontend can hide them when the selected version has no `dsrna.csv`.
 
 `POST /pipelines` accepts an optional `version` form field with the genomics
 Database Version to query. This is the value selected in the frontend's version
-dropdown; it takes precedence over `GENOMICS_VERSION`. Requests that omit it
-fall back to `GENOMICS_VERSION`, then to the genomics default version.
+dropdown. If it is omitted, no `version` parameter is sent to the genomics API,
+so the genomics service uses its configured default version.
 
 The gene-ID patterns matter because `GET /orthology/{species}` returns genes
 from every other species in a group, while the pipeline steps only promise
